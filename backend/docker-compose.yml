@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Expose MongoDB port
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db # Persist data
+
+  # Redis Service
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379" # Expose Redis port
+    volumes:
+      - redis_data:/data # Persist data
+
+  # Backend Service (FastAPI)
+  backend:
+    build: .
+    container_name: GlitchAgent
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Bind mount for live reload
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      MONGO_URI: "mongodb://admin:password@mongodb:27017"
+      REDIS_URI: "redis://redis:6379"
+      PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+    cap_add:
+      - SYS_ADMIN
+    shm_size: 2gb
+
+# Volumes for data persistence
+volumes:
+  mongodb_data:
+  redis_data:

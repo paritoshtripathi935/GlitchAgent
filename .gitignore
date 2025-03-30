@@ -1,0 +1,4 @@
+plans
+backend/logs
+venv
+*pyc

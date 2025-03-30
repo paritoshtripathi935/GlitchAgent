@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pymongo
+redis
+pika
+python-multipart
+pydantic-settings
+python-dotenv
+playwright
+pydantic
+requests
