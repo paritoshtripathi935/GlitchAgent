@@ -8,7 +8,8 @@ function initial(): Theme {
     const saved = localStorage.getItem(KEY);
     if (saved === 'light' || saved === 'dark') return saved;
   } catch { /* storage blocked */ }
-  return 'dark';
+  // No saved choice: follow the OS until the user toggles.
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
 export function useTheme() {

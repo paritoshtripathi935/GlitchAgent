@@ -33,43 +33,43 @@ export default function ConsolePage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-8 py-10 md:py-16">
-      <h1 className="font-display text-3xl font-semibold tracking-tight">What should the browser do?</h1>
+    <div className="mx-auto max-w-3xl px-4 sm:px-8 py-12 md:py-16">
+      <h1 className="font-display text-h2 font-semibold">What should the browser do?</h1>
       <p className="mt-2 text-muted">Describe the task in plain English. You'll see the plan before the result.</p>
 
-      <form onSubmit={submit} className="mt-8 rounded-xl border border-line bg-surface focus-within:border-accent transition-colors">
+      <form onSubmit={submit} className="mt-8 rounded-xl border border-line-strong bg-surface focus-within:border-accent transition-colors">
         <label htmlFor="cmd" className="sr-only">Command</label>
         <textarea id="cmd" value={command} onChange={e => setCommand(e.target.value)} rows={3} autoFocus
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
           placeholder='e.g. Open github.com and search for "playwright python"'
-          className="w-full resize-none bg-transparent px-4 pt-4 pb-2 font-mono text-[14px] outline-none placeholder:text-dim" />
+          className="w-full resize-none bg-transparent px-4 pt-4 pb-2 font-mono text-small outline-none placeholder:text-dim" />
         {showContext && (
           <div className="px-4 pb-2">
-            <label htmlFor="ctx" className="text-xs text-dim">Extra context (optional)</label>
+            <label htmlFor="ctx" className="text-caption text-dim">Extra context (optional)</label>
             <input id="ctx" value={context} onChange={e => setContext(e.target.value)}
               placeholder="e.g. I'm already logged in; prefer the first result"
-              className="mt-1 w-full rounded-md bg-raised border border-line px-3 h-9 text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full rounded-md bg-raised border border-line-strong px-3 h-9 pointer-coarse:h-11 text-small outline-none focus:border-accent" />
           </div>
         )}
         <div className="flex items-center justify-between gap-3 border-t border-line px-3 py-2">
-          <button type="button" onClick={() => setShowContext(s => !s)} className="text-xs text-dim hover:text-fg px-1 cursor-pointer">
+          <button type="button" onClick={() => setShowContext(s => !s)} className="h-8 pointer-coarse:h-11 text-caption text-dim hover:text-fg px-2 cursor-pointer">
             {showContext ? 'Hide context' : '+ Add context'}
           </button>
           <button type="submit" disabled={!command.trim() || planning}
-            className="inline-flex items-center gap-2 rounded-lg bg-accent text-ink px-4 h-9 text-sm font-semibold disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed">
+            className="inline-flex items-center gap-2 rounded-lg bg-accent text-ink px-4 h-9 pointer-coarse:h-11 text-small font-semibold disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed">
             {planning ? <><Loader2 size={15} className="animate-spin" /> Planning</> : <>Run <CornerDownLeft size={14} /></>}
           </button>
         </div>
       </form>
-      <p className="mt-2 text-xs text-dim">⌘/Ctrl + Enter to run · commands are saved to history, so keep passwords out of them.</p>
+      <p className="mt-2 text-caption text-dim">⌘/Ctrl + Enter to run · commands are saved to history, so keep passwords out of them.</p>
 
       {!plan && !planning && !error && (
-        <div className="mt-10">
-          <p className="text-xs uppercase tracking-[0.15em] text-dim font-mono">Try one</p>
+        <div className="mt-12">
+          <p className="text-caption uppercase tracking-wider text-dim font-mono">Try one</p>
           <div className="mt-3 flex flex-col gap-2">
             {EXAMPLES.map(ex => (
               <button key={ex} onClick={() => setCommand(ex)}
-                className="text-left rounded-lg border border-line px-4 py-3 text-sm text-muted hover:text-fg hover:bg-hover transition-colors cursor-pointer">
+                className="text-left rounded-lg border border-line px-4 py-3 text-small text-muted hover:text-fg hover:bg-hover transition-colors cursor-pointer">
                 {ex}
               </button>
             ))}
@@ -80,11 +80,11 @@ export default function ConsolePage() {
       {error && <div className="mt-8"><ErrorNote message={error} /></div>}
 
       {plan && (
-        <div className="mt-10 space-y-8">
+        <div className="mt-12 space-y-8">
           <section>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Plan · {plan.actions.length} steps</h2>
-              <Link to={`/runs/${plan.request_id}`} className="inline-flex items-center gap-1 text-xs text-dim hover:text-fg">
+              <h2 className="text-small font-semibold">Plan · {plan.actions.length} steps</h2>
+              <Link to={`/runs/${plan.request_id}`} className="inline-flex items-center gap-1 text-caption text-dim hover:text-fg">
                 Run page <ArrowUpRight size={13} />
               </Link>
             </div>
@@ -93,7 +93,7 @@ export default function ConsolePage() {
             </div>
           </section>
           <section>
-            <h2 className="text-sm font-semibold mb-3">Result</h2>
+            <h2 className="text-small font-semibold mb-3">Result</h2>
             <RunResult {...run} />
           </section>
         </div>

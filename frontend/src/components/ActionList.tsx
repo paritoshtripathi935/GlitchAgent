@@ -14,9 +14,9 @@ export function actionTarget(a: BrowserAction): string {
 
 export default function ActionList({ actions, activeIndex }: { actions: BrowserAction[]; activeIndex?: number }) {
   return (
-    <ol className="font-mono text-[13px] divide-y divide-line">
+    <ol className="font-mono text-small divide-y divide-line">
       {actions.map((a, i) => (
-        <li key={i} className={`flex items-baseline gap-3 px-4 py-2.5 rise ${i === activeIndex ? 'bg-accent-soft' : ''}`}
+        <li key={i} className={`flex items-baseline gap-3 px-4 py-3 rise ${i === activeIndex ? 'bg-accent-soft' : ''}`}
           style={{ animationDelay: `${i * 60}ms` }}>
           <span className="text-dim w-5 shrink-0 text-right">{i + 1}</span>
           <span className="w-[86px] shrink-0 text-accent">{a.action}</span>

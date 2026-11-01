@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
-    <script>try{var t=localStorage.getItem('glitch:theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+    <script>try{var t=localStorage.getItem('glitch:theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t}catch(e){}</script>
   </head>
   <body>
     <div id="root"><div role="status" style="min-height:100vh;display:grid;place-items:center;font:14px system-ui,sans-serif;opacity:.6">Loading GlitchAgent…</div></div>

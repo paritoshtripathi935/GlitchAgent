@@ -18,7 +18,7 @@ function likelySignedOut() {
 }
 
 const Loading = () => (
-  <div role="status" className="min-h-screen grid place-items-center text-sm text-dim">Loading GlitchAgent…</div>
+  <div role="status" className="min-h-screen grid place-items-center text-small text-dim">Loading GlitchAgent…</div>
 );
 
 export default function App() {
