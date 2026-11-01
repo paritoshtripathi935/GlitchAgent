@@ -1,16 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import uvicorn
 from src.settings.settings import BackendBaseSettings
 from src.utils import RootLoggerConfig
 import logging
 from src.routers.v1.glitch_agent import GlitchAgent_Api_Router
+from src.utils.auth import warn_if_auth_disabled
 
 # Application class
 class GlitchAgent:
     def __init__(self):
         RootLoggerConfig()
         logging.info("Setting up application")
+        warn_if_auth_disabled()
         self.settings = BackendBaseSettings()
         self.app = FastAPI(**self.settings.set_backend_app_attributes)
         self._setup_middleware()
@@ -21,7 +24,7 @@ class GlitchAgent:
         logging.info("Setting up middleware")
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["http://localhost:5173"],
+            allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(","),
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],

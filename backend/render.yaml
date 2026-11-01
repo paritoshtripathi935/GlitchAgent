@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: glitchagent-backend
+    env: docker
+    plan: starter # Chromium needs more than the 512MB free tier
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: HEADLESS
+        value: "true"
+
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URI
+        sync: false
+
+      # Cloudflare LLM
+      - key: CLOUDFLARE_API_KEY
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+
+      # Clerk auth, e.g. https://<your-instance>.clerk.accounts.dev
+      - key: CLERK_JWT_ISSUER
+        sync: false
+
+      # CORS: comma-separated frontend origins
+      - key: ALLOWED_ORIGINS
+        sync: false

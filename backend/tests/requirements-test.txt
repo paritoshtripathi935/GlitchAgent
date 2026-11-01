@@ -2,3 +2,9 @@ requests==2.31.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 faker==19.13.0
+
+# offline suite (tests/test_auth_and_scoping.py)
+httpx
+mongomock
+fakeredis
+python-jose[cryptography]
