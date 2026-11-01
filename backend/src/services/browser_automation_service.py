@@ -1,3 +1,4 @@
+import os
 import uuid
 import logging
 import json
@@ -40,12 +41,14 @@ class BrowserAutomationService:
         self.page = None
         logging.info("BrowserAutomation service initialized")
 
-    async def start_browser(self, headless: bool = False) -> None:
+    async def start_browser(self, headless: Optional[bool] = None) -> None:
         """Start a browser instance.
         
         Args:
             headless: Whether to run the browser in headless mode
         """
+        if headless is None:
+            headless = os.getenv("HEADLESS", "true").lower() != "false"
         if self.playwright is None:
             self.playwright = await async_playwright().start()
             

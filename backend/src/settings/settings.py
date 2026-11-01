@@ -59,6 +59,4 @@ class BackendBaseSettings:
             "docs_url": self.DOCS_URL,
             "openapi_url": self.OPENAPI_URL,
             "redoc_url": self.REDOC_URL,
-            "openapi_prefix": self.OPENAPI_PREFIX,
-            "api_prefix": self.API_PREFIX,
         }

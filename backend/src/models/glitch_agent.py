@@ -63,6 +63,7 @@ class ExecutionResult(BaseModel):
     """Model for execution result"""
     request_id: str = Field(..., description="Unique identifier for the request")
     success: bool = Field(..., description="Whether the execution was successful")
+    status: str = Field("completed", description="running, completed or failed")
     message: str = Field(..., description="Message about the execution")
     screenshot: Optional[str] = Field(None, description="Base64-encoded screenshot")
     extracted_data: Optional[Dict[str, Any]] = Field(None, description="Data extracted from the page")
@@ -80,6 +81,7 @@ class ExecutionHistory(BaseModel):
     request_id: str = Field(..., description="Unique identifier for the request")
     command: str = Field(..., description="Original command")
     success: bool = Field(..., description="Whether the execution was successful")
+    status: str = Field("completed", description="pending, completed or failed")
     created_at: datetime = Field(default_factory=datetime.now, description="When the execution was created")
     completed_at: Optional[datetime] = Field(None, description="When the execution completed")
 

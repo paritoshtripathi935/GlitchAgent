@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # VITE_* vars are intentionally public — Vite inlines them into the client
+  # bundle at build time. Netlify's secrets scanner otherwise flags them.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL,VITE_CLERK_PUBLISHABLE_KEY"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

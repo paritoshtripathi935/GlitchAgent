@@ -13,6 +13,7 @@ from src.models.glitch_agent import (
 )
 from src.services.browser_automation_service import BrowserAutomationService
 from src.utils.database.mongo_handler import MongoHandler as MongoDBHandler
+from src.utils.auth import get_user_id
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,42 +31,45 @@ active_services = {}
 execution_results = {}
 
 
+_service_instance = None
+
+
 def get_browser_automation_service():
-    """Dependency to get the BrowserAutomation service instance"""
-    api_key = os.getenv("CLOUDFLARE_API_KEY")
-    account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
-    
-    if not api_key or not account_id:
-        logging.error("Missing Cloudflare API credentials")
-        raise HTTPException(
-            status_code=500, 
-            detail="Server configuration error: Missing API credentials"
-        )
-    
-    return BrowserAutomationService(api_key=api_key, account_id=account_id)
-
-
-browser_automation_service_instance = get_browser_automation_service()
+    """Lazily build the BrowserAutomation service; 503 if Cloudflare creds are missing."""
+    global _service_instance
+    if _service_instance is None:
+        api_key = os.getenv("CLOUDFLARE_API_KEY")
+        account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+        if not api_key or not account_id:
+            logging.error("Missing Cloudflare API credentials")
+            raise HTTPException(
+                status_code=503,
+                detail="Server configuration error: Missing Cloudflare API credentials"
+            )
+        _service_instance = BrowserAutomationService(api_key=api_key, account_id=account_id)
+    return _service_instance
 
 
 async def execute_actions_background(
     service_id: str,
     request_id: str,
-    actions: list
+    actions: list,
+    user_id: str
 ):
     """Background task to execute browser actions"""
     try:
         # Get the service instance
         service = active_services.get(service_id)
         if not service:
-            service = browser_automation_service_instance
+            service = get_browser_automation_service()
             active_services[service_id] = service
             
         # Execute the actions
         result = await service.execute_actions(actions, request_id)
         
         # Store the result
-        execution_results[request_id] = result
+        result.status = "completed" if result.success else "failed"
+        execution_results[request_id] = (user_id, result)
         
         # Update the database - Fix the update operation
         await mongo_handler.update_one(
@@ -87,6 +91,7 @@ async def execute_actions_background(
             collection="execution_history",
             document={
                 "request_id": request_id,
+                "user_id": user_id,
                 "success": result.success,
                 "completed_at": datetime.now()
             }
@@ -115,6 +120,7 @@ async def interact(
     command: str,
     background_tasks: BackgroundTasks,
     context: Optional[str] = None,
+    user_id: str = Depends(get_user_id),
 ):
     """
     Simplified endpoint that takes natural language input and processes it.
@@ -135,8 +141,10 @@ async def interact(
         )
         
         # Process the command using the existing endpoint logic
-        return await process_command(request, background_tasks)
-        
+        return await process_command(request, background_tasks, user_id)
+
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error in interact endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing command: {str(e)}")
@@ -146,6 +154,7 @@ async def interact(
 async def process_command(
     request: CommandRequest,
     background_tasks: BackgroundTasks,
+    user_id: str = Depends(get_user_id),
 ):
     """Process a natural language command and translate it into browser actions"""
     try:
@@ -153,7 +162,7 @@ async def process_command(
         service_id = str(uuid.uuid4())
         
         # Translate the command to actions
-        response = await browser_automation_service_instance.translate_command(request)
+        response = await get_browser_automation_service().translate_command(request)
 
         logging.info(f"Command translated to actions: {response.actions}")
         # Check if actions are empty
@@ -165,6 +174,7 @@ async def process_command(
             collection="command_executions",
             document={
                 "request_id": response.request_id,
+                "user_id": user_id,
                 "command": request.command,
                 "status": "pending",
                 "created_at": datetime.now()
@@ -176,29 +186,32 @@ async def process_command(
             execute_actions_background,
             service_id,
             response.request_id,
-            response.actions
+            response.actions,
+            user_id
         )
         
         return response
     
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error processing command: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing command: {str(e)}")
 
 
 @GlitchAgent_Api_Router.get("/execution/{request_id}", response_model=ExecutionResult)
-async def get_execution_result(request_id: str):
+async def get_execution_result(request_id: str, user_id: str = Depends(get_user_id)):
     """Get the result of a command execution"""
     try:
         # Check if the result is in memory
-        result = execution_results.get(request_id)
-        if result:
+        owner, result = execution_results.get(request_id, (None, None))
+        if result and owner == user_id:
             return result
         
         # If not in memory, check the database
         execution_doc = await mongo_handler.find_one(
             collection="command_executions",
-            query={"request_id": request_id}
+            query={"request_id": request_id, "user_id": user_id}
         )
         
         if not execution_doc:
@@ -209,6 +222,7 @@ async def get_execution_result(request_id: str):
             return ExecutionResult(
                 request_id=request_id,
                 success=False,
+                status="running",
                 message="Execution is still in progress",
                 completed_at=datetime.now()
             )
@@ -217,6 +231,7 @@ async def get_execution_result(request_id: str):
         return ExecutionResult(
             request_id=request_id,
             success=execution_doc.get("success", False),
+            status=execution_doc.get("status", "failed"),
             message=execution_doc.get("message", ""),
             error=execution_doc.get("error"),
             completed_at=execution_doc.get("completed_at", datetime.now())
@@ -234,21 +249,30 @@ async def get_execution_result(request_id: str):
 @GlitchAgent_Api_Router.get("/history", response_model=List[ExecutionHistory])
 async def get_execution_history(
     skip: int = Query(0, ge=0, description="Number of items to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Number of items to return")
+    limit: int = Query(10, ge=1, le=100, description="Number of items to return"),
+    user_id: str = Depends(get_user_id),
 ):
     """Get history of command executions"""
     try:
-        # Query MongoDB for history items
-        cursor = await mongo_handler.find_many(
-            collection="execution_history",
-            query={},
+        # command_executions holds the command text and status; execution_history only has outcomes
+        docs = await mongo_handler.find_many(
+            collection="command_executions",
+            query={"user_id": user_id},
             skip=skip,
             limit=limit,
-            sort=[("created_at", -1)]  # Sort by created_at in descending order
+            sort=[("created_at", -1)]
         )
-        
-        # Convert cursor to list
-        history_items = await cursor.to_list(length=limit)
+        history_items = [
+            ExecutionHistory(
+                request_id=d["request_id"],
+                command=d.get("command", ""),
+                success=d.get("success", False),
+                status=d.get("status", "pending"),
+                created_at=d.get("created_at"),
+                completed_at=d.get("completed_at"),
+            )
+            for d in docs
+        ]
         
         return history_items
     
@@ -258,7 +282,7 @@ async def get_execution_history(
 
 
 @GlitchAgent_Api_Router.post("/stop-browser")
-async def stop_browser():
+async def stop_browser(user_id: str = Depends(get_user_id)):
     """Stop all browser instances"""
     try:
         for service_id, service in active_services.items():
